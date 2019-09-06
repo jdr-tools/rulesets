@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: virtuatable-rulesets
+Version: 0.1.0
+Summary: The service to create, update, get or delete rule sets for any tabletop RPG
+Home-page: http://flask.pocoo.org/docs/tutorial/
+Maintainer: Vincent Courtois
+Maintainer-email: courtois.vincent@outlook.com
+License: BSD
+Description: UNKNOWN
+Platform: UNKNOWN
+Provides-Extra: test
