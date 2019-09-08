@@ -1,20 +1,20 @@
 from bson.objectid import ObjectId
 from flask import jsonify, request
-from rulesets import app
 from rulesets.models.ruleset import Ruleset
 import pdb, sys
+from rulesets.routes.blueprints import rulesets_blueprint
 
-@app.route("/rulesets", methods=['POST'])
+@rulesets_blueprint.route("", methods=['POST'])
 def create():
-  if 'title' not in app.parsed_body:
+  if 'title' not in request.json:
     return jsonify({"message": "title_not_given"}), 400
-  elif len(app.parsed_body['title']) < 6:
+  elif len(request.json['title']) < 6:
     return jsonify({"message": "title_too_short"}), 400
 
   ruleset = Ruleset(
     _id=ObjectId(),
-    title=app.parsed_body['title'],
-    description=app.parsed_body.get('description', '')
+    title=request.json['title'],
+    description=request.json.get('description', '')
   )
   ruleset.save()
 

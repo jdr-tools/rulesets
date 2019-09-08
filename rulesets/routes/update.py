@@ -1,9 +1,9 @@
 from rulesets.models.ruleset import Ruleset
 from flask import jsonify, request
-from rulesets import app
 from bson.objectid import ObjectId
+from rulesets.routes.blueprints import rulesets_blueprint
 
-@app.route("/rulesets/<ruleset_id>", methods=['PUT'])
+@rulesets_blueprint.route("/<ruleset_id>", methods=['PUT'])
 def update(ruleset_id):
   try:
     ruleset = Ruleset.objects.raw({"_id": ObjectId(ruleset_id)})[0]
