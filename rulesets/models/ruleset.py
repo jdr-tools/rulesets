@@ -1,9 +1,8 @@
 from pymodm import MongoModel, fields
-from flaskr.models.account import Account
+from rulesets.models.account import Account
 import pdb
 
 class Ruleset(MongoModel):
-  _id = fields.ObjectIdField(primary_key=True)
   title = fields.CharField(min_length=6)
   description = fields.CharField()
   created_at = fields.DateTimeField()

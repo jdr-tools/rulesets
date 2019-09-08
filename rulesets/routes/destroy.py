@@ -1,5 +1,6 @@
-from flaskr import app
-from flaskr.models.ruleset import Ruleset
+from bson.objectid import ObjectId
+from rulesets import app
+from rulesets.models.ruleset import Ruleset
 from flask import jsonify
 
 @app.route("/rulesets/<ruleset_id>", methods=["DELETE"])

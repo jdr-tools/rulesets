@@ -1,6 +1,6 @@
-from flaskr import app
+from rulesets import app
 from flask import jsonify
-from flaskr.models.ruleset import Ruleset
+from rulesets.models.ruleset import Ruleset
 
 @app.route("/rulesets", methods=['GET'])
 def list():
