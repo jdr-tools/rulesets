@@ -6,11 +6,6 @@ from rulesets.routes.blueprints import rulesets_blueprint
 
 @rulesets_blueprint.route("", methods=['POST'])
 def create():
-  if 'title' not in request.json:
-    return jsonify({"message": "title_not_given"}), 400
-  elif len(request.json['title']) < 6:
-    return jsonify({"message": "title_too_short"}), 400
-
   ruleset = Ruleset(
     _id=ObjectId(),
     title=request.json['title'],

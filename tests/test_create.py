@@ -32,7 +32,11 @@ def test_missing_session_id_status_code(client):
 
 def test_missing_session_id_response_body(client):
   response_body = client.post('/rulesets').get_json()
-  assert response_body == {'message': 'session_id_required'}
+  assert response_body == {
+    'status': 400,
+    'field': 'session_id',
+    'error': 'required'
+  }
 
 def test_empty_session_id_status_code(client):
   response = client.post('/rulesets', json={'session_id': None})
@@ -40,7 +44,11 @@ def test_empty_session_id_status_code(client):
 
 def test_empty_session_id_response_body(client):
   response = client.post('/rulesets', json={'session_id': None})
-  assert response.get_json() == {'message': 'session_id_required'}
+  assert response.get_json() == {
+    'status': 400,
+    'field': 'session_id',
+    'error': 'required'
+  }
 
 def test_unknown_session_id_status_code(client):
   response = client.post('/rulesets', json={'session_id': str(ObjectId())})
@@ -48,7 +56,11 @@ def test_unknown_session_id_status_code(client):
 
 def test_unknown_session_id_response_body(client):
   response = client.post('/rulesets', json={'session_id': str(ObjectId())})
-  assert response.get_json() == {'message': 'session_id_unknown'}
+  assert response.get_json() == {
+    'status': 404,
+    'field': 'session_id',
+    'error': 'unknown'
+  }
 
 def test_creation_status_without_title(create):
   response = create({'description': 'test description'})
@@ -56,7 +68,11 @@ def test_creation_status_without_title(create):
 
 def test_creation_body_without_title(create):
   response = create({'description': 'test description'})
-  assert response.get_json() == {'message': 'title_not_given'}
+  assert response.get_json() == {
+    'status': 400,
+    'field': 'title',
+    'error': 'required'
+  }
 
 def test_creation_status_with_short_title(create):
   response = create({'title': 'short', 'description': 'test'})
@@ -64,7 +80,11 @@ def test_creation_status_with_short_title(create):
 
 def test_creation_body_with_short_title(create):
   response = create({'title': 'short', 'description': 'test'})
-  assert response.get_json() == {'message': 'title_too_short'}
+  assert response.get_json() == {
+    'status': 400,
+    'field': 'title',
+    'error': 'too_short'
+  }
 
 def test_creation_status_in_nominal_case(create):
   response = create({'title': 'long enough', 'description': 'test'})

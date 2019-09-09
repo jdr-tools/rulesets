@@ -48,14 +48,22 @@ def test_missing_session_id_status_code(client):
 
 def test_missing_session_id_response_body(client):
   response_body = client.get('/rulesets').get_json()
-  assert response_body == {'message': 'session_id_required'}
+  assert response_body == {
+    'status': 400,
+    'field': 'session_id',
+    'error': 'required'
+  }
 
 def test_empty_session_id_status_code(get_item):
   assert get_item({'session_id': None}).status_code == 400
 
 def test_empty_session_id_response_body(get_item):
   response_body = get_item({'session_id': None}).get_json()
-  assert response_body == {'message': 'session_id_required'}
+  assert response_body == {
+    'status': 400,
+    'field': 'session_id',
+    'error': 'required'
+  }
 
 def test_unknown_session_id_status_code(get_item):
   response = get_item({'session_id': str(ObjectId())})
@@ -63,7 +71,11 @@ def test_unknown_session_id_status_code(get_item):
 
 def test_unknown_session_id_response_body(get_item):
   response = get_item({'session_id': str(ObjectId())})
-  assert response.get_json() == {'message': 'session_id_unknown'}
+  assert response.get_json() == {
+    'status': 404,
+    'field': 'session_id',
+    'error': 'unknown'
+  }
 
 def test_get_existing_item_status_code(get_item):
   assert get_item({'session_id': pytest.session.token}).status_code == 200
@@ -78,4 +90,8 @@ def test_get_unknown_item_status_code(get_unknown_item):
   assert get_unknown_item().status_code == 404
 
 def test_get_unknown_item_response_body(get_unknown_item):
-  assert get_unknown_item().get_json()['message'] == 'not_found'
+  assert get_unknown_item().get_json() == {
+    'status': 404,
+    'field': 'ruleset_id',
+    'error': 'unknown'
+  }

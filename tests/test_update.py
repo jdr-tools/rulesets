@@ -29,9 +29,9 @@ def empty_update(client):
 
 @pytest.fixture
 def update_title(client):
-  def inner_method():
+  def inner_method(title='other title'):
     return client.put('/rulesets/' + str(pytest.ruleset._id), json={
-      'title': 'other title',
+      'title': title,
       'session_id': pytest.session.token
     })
   return inner_method
@@ -71,7 +71,11 @@ def test_missing_session_id_status_code(empty_update):
   assert empty_update({}).status_code == 400
 
 def test_missing_session_id_response_body(empty_update):
-  assert empty_update({}).get_json() == {'message': 'session_id_required'}
+  assert empty_update({}).get_json() == {
+    'status': 400,
+    'field': 'session_id',
+    'error': 'required'
+  }
 
 def test_empty_session_id_status_code(empty_update):
   response = empty_update({'session_id': None})
@@ -79,7 +83,11 @@ def test_empty_session_id_status_code(empty_update):
 
 def test_empty_session_id_response_body(empty_update):
   response = empty_update({'session_id': None})
-  assert response.get_json() == {'message': 'session_id_required'}
+  assert response.get_json() == {
+    'status': 400,
+    'field': 'session_id',
+    'error': 'required'
+  }
 
 def test_unknown_session_id_status_code(empty_update):
   response = empty_update({'session_id': str(ObjectId())})
@@ -87,7 +95,11 @@ def test_unknown_session_id_status_code(empty_update):
 
 def test_unknown_session_id_response_body(empty_update):
   response = empty_update({'session_id': str(ObjectId())})
-  assert response.get_json() == {'message': 'session_id_unknown'}
+  assert response.get_json() == {
+    'status': 404,
+    'field': 'session_id',
+    'error': 'unknown'
+  }
 
 def test_title_update_status_code_in_nominal_case(update_title):
   assert update_title().status_code == 200
@@ -103,7 +115,21 @@ def test_update_empty_title_status_code(update_empty_title):
   assert update_empty_title().status_code == 400
 
 def test_update_empty_title_response_body(update_empty_title):
-  assert update_empty_title().get_json()['message'] == 'title_empty'
+  assert update_empty_title().get_json() == {
+    'status': 400,
+    'field': 'title',
+    'error': 'too_short'
+  }
+
+def test_too_short_title_update_status_code(update_title):
+  assert update_title('test').status_code == 400
+
+def test_too_short_title_update_response_body(update_title):
+  assert update_title('test').get_json() == {
+    'status': 400,
+    'field': 'title',
+    'error': 'too_short'
+  }
 
 def test_update_empty_title_in_database(first_ruleset, update_empty_title):
   update_empty_title()
@@ -123,4 +149,8 @@ def test_update_with_unknown_id_status_code(update_unknown_id):
   assert update_unknown_id().status_code == 404
 
 def test_update_with_unknown_id_response_body(update_unknown_id):
-  assert update_unknown_id().get_json()['message'] == 'not_found'
+  assert update_unknown_id().get_json() == {
+    'status': 404,
+    'field': 'ruleset_id',
+    'error': 'unknown'
+  }

@@ -36,14 +36,22 @@ def test_missing_session_id_status_code(client):
 
 def test_missing_session_id_response_body(client):
   response_body = client.get('/rulesets').get_json()
-  assert response_body == {'message': 'session_id_required'}
+  assert response_body == {
+    'status': 400,
+    'field': 'session_id',
+    'error': 'required'
+  }
 
 def test_empty_session_id_status_code(list_request):
   assert list_request({'session_id': None}).status_code == 400
 
 def test_empty_session_id_response_body(list_request):
   response_body = list_request({'session_id': None}).get_json()
-  assert response_body == {'message': 'session_id_required'}
+  assert response_body == {
+    'status': 400,
+    'field': 'session_id',
+    'error': 'required'
+  }
 
 def test_unknown_session_id_status_code(list_request):
   response = list_request({'session_id': str(ObjectId())})
@@ -51,7 +59,11 @@ def test_unknown_session_id_status_code(list_request):
 
 def test_unknown_session_id_response_body(list_request):
   response = list_request({'session_id': str(ObjectId())})
-  assert response.get_json() == {'message': 'session_id_unknown'}
+  assert response.get_json() == {
+    'status': 404,
+    'field': 'session_id',
+    'error': 'unknown'
+  }
 
 def test_empty_list_status_code(list):
   assert list.status_code == 200
