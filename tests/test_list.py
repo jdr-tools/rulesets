@@ -15,10 +15,11 @@ def test_populated_list_status_code(client):
   Ruleset(title='test title', description='test description')
   assert client.get('/rulesets').status_code == 200
 
-def populated_list_response_body(client):
-  Ruleset(title='test title', description='test description')
+def test_populated_list_response_body(client):
+  ruleset = Ruleset(title='test title', description='test description').save()
   assert client.get('/rulesets').get_json() == [
     {
+      '_id': str(ruleset._id),
       'title': 'test title',
       'description': 'test description'
     }
