@@ -1,6 +1,6 @@
 from bson.objectid import ObjectId
 from flask import jsonify, request
-from rulesets.models.ruleset import Ruleset
+from rulesets.models import Ruleset
 import pdb, sys
 from rulesets.routes.blueprints import rulesets_blueprint
 

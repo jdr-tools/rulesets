@@ -1,9 +1,7 @@
 import os, sys, json, pdb
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, g
-from rulesets.models.account import Account
-from rulesets.models.ruleset import Ruleset
-from rulesets.models.session import Session
+from rulesets.models import Account, Ruleset, Session
 from bson.objectid import ObjectId
 from rulesets.routes.blueprints.rulesets import rulesets_blueprint
 import rulesets.routes

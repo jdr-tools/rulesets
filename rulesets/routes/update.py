@@ -1,4 +1,4 @@
-from rulesets.models.ruleset import Ruleset
+from rulesets.models import Ruleset
 from flask import jsonify, request
 from bson.objectid import ObjectId
 from rulesets.routes.blueprints import rulesets_blueprint

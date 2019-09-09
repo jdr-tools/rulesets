@@ -1,5 +1,5 @@
 from flask import jsonify
-from rulesets.models.ruleset import Ruleset
+from rulesets.models import Ruleset
 from bson.objectid import ObjectId
 from rulesets.routes.blueprints import rulesets_blueprint
 from flask import g
