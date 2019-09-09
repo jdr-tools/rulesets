@@ -1,36 +1,93 @@
 from tests.fixtures.client import client
 from tests.fixtures.first_ruleset import first_ruleset
 from rulesets.models.ruleset import Ruleset
+from rulesets.models.account import Account
+from rulesets.models.session import Session
 import pytest
 from bson.objectid import ObjectId
+
+def setup_module():
+  Ruleset.objects.delete()
+  Session.objects.delete()
+
+  pytest.account = Account.objects.create(email='courtois.vincent@outlook.com')
+  pytest.session = Session.objects.create(
+    creator_id = pytest.account._id,
+    token = 'super secret token'
+  )
+
+def teardown_module(function):
+  Ruleset.objects.delete()
+  Session.objects.delete()
+  Ruleset.objects.delete()
+
+@pytest.fixture
+def empty_update(client):
+  def inner_method(json):
+    return client.put('/rulesets/test', json=json)
+  return inner_method
 
 @pytest.fixture
 def update_title(client):
   def inner_method():
-    return client.put('/rulesets/' + str(pytest.ruleset._id), json={'title': 'other title'})
+    return client.put('/rulesets/' + str(pytest.ruleset._id), json={
+      'title': 'other title',
+      'session_id': pytest.session.token
+    })
   return inner_method
 
 @pytest.fixture
 def update_empty_title(client):
   def inner_method():
-    return client.put('/rulesets/' + str(pytest.ruleset._id), json={'title': ''})
+    return client.put('/rulesets/' + str(pytest.ruleset._id), json={
+      'title': '',
+      'session_id': pytest.session.token
+    })
   return inner_method
 
 @pytest.fixture
 def update_unknown_id(client):
   def inner_method():
-    return client.put('/rulesets/' + str(ObjectId()), json={'title': 'other title'})
+    return client.put('/rulesets/' + str(ObjectId()), json={
+      'title': 'other title',
+      'session_id': pytest.session.token
+    })
   return inner_method
 
 @pytest.fixture
 def update_description(client):
   def inner_method():
-    return client.put('/rulesets/' + str(pytest.ruleset._id), json={'description': 'updated desc'})
+    return client.put('/rulesets/' + str(pytest.ruleset._id), json={
+      'description': 'updated desc',
+      'session_id': pytest.session.token
+    })
   return inner_method
 
 def setup_function(function):
-  Ruleset.objects.raw({}).delete()
+  Ruleset.objects.delete()
   pytest.ruleset = Ruleset(title='test title', description='test description').save()
+
+def test_missing_session_id_status_code(empty_update):
+  assert empty_update({}).status_code == 400
+
+def test_missing_session_id_response_body(empty_update):
+  assert empty_update({}).get_json() == {'message': 'session_id_required'}
+
+def test_empty_session_id_status_code(empty_update):
+  response = empty_update({'session_id': None})
+  assert response.status_code == 400
+
+def test_empty_session_id_response_body(empty_update):
+  response = empty_update({'session_id': None})
+  assert response.get_json() == {'message': 'session_id_required'}
+
+def test_unknown_session_id_status_code(empty_update):
+  response = empty_update({'session_id': str(ObjectId())})
+  assert response.status_code == 404
+
+def test_unknown_session_id_response_body(empty_update):
+  response = empty_update({'session_id': str(ObjectId())})
+  assert response.get_json() == {'message': 'session_id_unknown'}
 
 def test_title_update_status_code_in_nominal_case(update_title):
   assert update_title().status_code == 200
