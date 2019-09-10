@@ -1,9 +1,7 @@
-from tests.fixtures.client import client
 import pytest
-from rulesets.models.account import Account
-from rulesets.models.ruleset import Ruleset
-from rulesets.models.session import Session
 from bson.objectid import ObjectId
+from rulesets.models import Account, Ruleset, Session
+from tests.fixtures import client
 
 def setup_module():
   Account.objects.raw({}).delete()
