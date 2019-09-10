@@ -3,20 +3,6 @@ from bson.objectid import ObjectId
 from rulesets.models import Account, Ruleset, Session
 from tests.fixtures import client
 
-def setup_module():
-  Account.objects.delete()
-  Session.objects.delete()
-
-  pytest.account = Account.objects.create(email='courtois.vincent@outlook.com')
-  pytest.session = Session.objects.create(
-    creator_id = pytest.account._id,
-    token = 'super secret token'
-  )
-
-def teardown_module(function):
-  Ruleset.objects.raw({}).delete()
-  Session.objects.raw({}).delete()
-
 def setup_function(function):
   Ruleset.objects.delete()
   pytest.ruleset = Ruleset(title='test title', description='test description').save()

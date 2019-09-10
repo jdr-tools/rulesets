@@ -1,23 +1,11 @@
 import pytest
+import pdb
 from bson.objectid import ObjectId
 from rulesets.models import Account, Ruleset, Session
 from tests.fixtures import client
 
-def setup_module():
-  Account.objects.raw({}).delete()
-  Session.objects.raw({}).delete()
-  Ruleset.objects.raw({}).delete()
-
-  pytest.account = Account.objects.create(email='courtois.vincent@outlook.com')
-  pytest.session = Session.objects.create(
-    creator_id = pytest.account._id,
-    token = 'super secret token'
-  )
-
-def teardown_module(function):
-  Ruleset.objects.raw({}).delete()
-  Session.objects.raw({}).delete()
-  Ruleset.objects.raw({}).delete()
+def teardown_function():
+  Ruleset.objects.delete()
 
 @pytest.fixture
 def list_request(client):
@@ -25,7 +13,7 @@ def list_request(client):
 
 @pytest.fixture
 def list(list_request):
-  return list_request({'session_id': pytest.session.token})
+  return lambda: list_request({'session_id': pytest.session.token})
 
 def test_missing_session_id_status_code(client):
   assert client.get('/rulesets').status_code == 400
@@ -62,19 +50,20 @@ def test_unknown_session_id_response_body(list_request):
   }
 
 def test_empty_list_status_code(list):
-  assert list.status_code == 200
+  assert list().status_code == 200
 
 def test_empty_list_response_body(list):
-  assert list.get_json() == []
+  assert list().get_json() == []
 
 def test_populated_list_status_code(list):
   Ruleset(title='test title', description='test description').save()
-  assert list.status_code == 200
+  assert list().status_code == 200
 
 def test_populated_list_response_body(list):
-  assert list.get_json() == [
+  ruleset = Ruleset(title='test title', description='test description').save()
+  assert list().get_json() == [
     {
-      '_id': str(Ruleset.objects[0]._id),
+      '_id': str(ruleset._id),
       'title': 'test title',
       'description': 'test description'
     }

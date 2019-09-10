@@ -4,26 +4,10 @@ from rulesets.models import Account, Ruleset, Session
 from tests.fixtures import client
 
 def setup_module():
-  Account.objects.delete()
-  Session.objects.delete()
-  Ruleset.objects.delete()
-
-  pytest.account = Account.objects.create(
-    email='courtois.vincent@outlook.com'
-  )
-  pytest.session = Session.objects.create(
-    creator_id = pytest.account._id,
-    token = 'super secret token'
-  )
   pytest.ruleset = Ruleset.objects.create(
     title='test title',
     description='test description'
   )
-
-def teardown_module(function):
-  Ruleset.objects.delete()
-  Session.objects.delete()
-  Ruleset.objects.delete()
 
 @pytest.fixture
 def get_item(client):
