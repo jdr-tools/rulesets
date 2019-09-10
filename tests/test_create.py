@@ -23,9 +23,7 @@ def teardown_module(function):
 
 @pytest.fixture
 def create(client):
-  def inner_method(parameters):
-    return client.post('/rulesets', json={**parameters, 'session_id': pytest.session.token})
-  return inner_method
+  return lambda p: client.post('/rulesets', json={**p, 'session_id': pytest.session.token})
 
 def test_missing_session_id_status_code(client):
   assert client.post('/rulesets').status_code == 400

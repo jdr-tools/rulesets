@@ -23,45 +23,35 @@ def teardown_module(function):
 
 @pytest.fixture
 def empty_update(client):
-  def inner_method(json):
-    return client.put('/rulesets/test', json=json)
-  return inner_method
+  return lambda json: client.put('/rulesets/test', json=json)
 
 @pytest.fixture
 def update_title(client):
-  def inner_method(title='other title'):
-    return client.put('/rulesets/' + str(pytest.ruleset._id), json={
-      'title': title,
-      'session_id': pytest.session.token
-    })
-  return inner_method
+  return lambda t='other title': client.put('/rulesets/' + str(pytest.ruleset._id), json={
+    'title': t,
+    'session_id': pytest.session.token
+  })
 
 @pytest.fixture
 def update_empty_title(client):
-  def inner_method():
-    return client.put('/rulesets/' + str(pytest.ruleset._id), json={
-      'title': '',
-      'session_id': pytest.session.token
-    })
-  return inner_method
+  return lambda: client.put('/rulesets/' + str(pytest.ruleset._id), json={
+    'title': '',
+    'session_id': pytest.session.token
+  })
 
 @pytest.fixture
 def update_unknown_id(client):
-  def inner_method():
-    return client.put('/rulesets/' + str(ObjectId()), json={
-      'title': 'other title',
-      'session_id': pytest.session.token
-    })
-  return inner_method
+  return lambda: client.put('/rulesets/' + str(ObjectId()), json={
+    'title': 'other title',
+    'session_id': pytest.session.token
+  })
 
 @pytest.fixture
 def update_description(client):
-  def inner_method():
-    return client.put('/rulesets/' + str(pytest.ruleset._id), json={
-      'description': 'updated desc',
-      'session_id': pytest.session.token
-    })
-  return inner_method
+  return lambda: client.put('/rulesets/' + str(pytest.ruleset._id), json={
+    'description': 'updated desc',
+    'session_id': pytest.session.token
+  })
 
 def setup_function(function):
   Ruleset.objects.delete()

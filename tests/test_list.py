@@ -23,9 +23,7 @@ def teardown_module(function):
 
 @pytest.fixture
 def list_request(client):
-  def inner_method(parameters):
-    return client.get('/rulesets', query_string = parameters)
-  return inner_method
+  return lambda p: client.get('/rulesets', query_string = p)
 
 @pytest.fixture
 def list(list_request):

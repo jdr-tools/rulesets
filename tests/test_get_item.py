@@ -30,15 +30,11 @@ def teardown_module(function):
 
 @pytest.fixture
 def get_item(client):
-  def inner_method(parameters = {}):
-    return client.get('/rulesets/' + str(pytest.ruleset._id), query_string=parameters)
-  return inner_method
+  return lambda p={}: client.get('/rulesets/' + str(pytest.ruleset._id), query_string=p)
 
 @pytest.fixture
 def get_unknown_item(client):
-  def inner_method():
-    return client.get('/rulesets/' + str(ObjectId()), query_string={'session_id': pytest.session.token})
-  return inner_method
+  return lambda: client.get('/rulesets/' + str(ObjectId()), query_string={'session_id': pytest.session.token})
 
 def setup_function():
   pytest.ruleset = Ruleset(title='test title', description='test description').save()
