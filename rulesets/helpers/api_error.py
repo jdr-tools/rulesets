@@ -1,6 +1,6 @@
 from flask import jsonify
 
-def api_error(status, error_string):
+def api_error(status, error_string) -> tuple:
   """
     Formats an API as it is excpected from the rest of the API.
     :param status: the HTTP status, you want to respond with.

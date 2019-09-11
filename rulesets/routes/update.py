@@ -4,8 +4,7 @@ from ..models import Ruleset, Session
 from .blueprints import rulesets_blueprint
 
 @rulesets_blueprint.route('/<ruleset_id>', methods = ['PUT'])
-def update(ruleset_id):
-
+def update(ruleset_id) -> tuple:
   if 'title' in request.json:
     g.ruleset.title = request.json.get('title')
 

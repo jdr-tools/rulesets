@@ -4,7 +4,7 @@ from ..models import Ruleset
 from .blueprints import rulesets_blueprint
 
 @rulesets_blueprint.route('', methods = ['POST'])
-def create():
+def create() -> tuple:
   ruleset = Ruleset.objects.create(
     _id = ObjectId(),
     title = request.json['title'],

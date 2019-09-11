@@ -4,7 +4,7 @@ from ..models import Ruleset
 from .blueprints import rulesets_blueprint
 
 @rulesets_blueprint.route('/<ruleset_id>', methods = ['GET'])
-def item(ruleset_id):
+def item(ruleset_id) -> tuple:
   return jsonify(
     title = g.ruleset.title,
     description = g.ruleset.description

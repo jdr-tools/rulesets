@@ -4,7 +4,7 @@ from ..models import Ruleset, Session
 from .blueprints import rulesets_blueprint
 
 @rulesets_blueprint.route('', methods = ['GET'])
-def list():
+def list() -> tuple:
   rulesets = []
   for ruleset in Ruleset.objects:
     rulesets.append({
