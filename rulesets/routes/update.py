@@ -3,7 +3,7 @@ from flask import jsonify, request, g
 from ..models import Ruleset, Session
 from .blueprints import rulesets_blueprint
 
-@rulesets_blueprint.route("/<ruleset_id>", methods=['PUT'])
+@rulesets_blueprint.route('/<ruleset_id>', methods = ['PUT'])
 def update(ruleset_id):
 
   if 'title' in request.json:
@@ -13,11 +13,10 @@ def update(ruleset_id):
     g.ruleset.description = request.json.get('description')
 
   g.ruleset.save()
-  response = {
-    "message": "updated",
-    "item": {
-      "title": g.ruleset.title,
-      "description": g.ruleset.description
+  return jsonify(
+    message = 'updated',
+    item = {
+      'title': g.ruleset.title,
+      'description': g.ruleset.description
     }
-  }
-  return jsonify(response)
+  )

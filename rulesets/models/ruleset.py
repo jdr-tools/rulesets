@@ -3,11 +3,15 @@ from rulesets.models.account import Account
 import pdb
 
 class Ruleset(MongoModel):
+  """
+    A ruleset is a set of rules defining how to play an RPG.
+    .. todo:: Add the whole systme of entities to be able to populate the ruleset.
+  """
+
   title = fields.CharField(min_length=6)
   description = fields.CharField()
   created_at = fields.DateTimeField()
   updated_at = fields.DateTimeField()
-
   creator_id = fields.ObjectIdField()
 
   def creator():
@@ -17,8 +21,8 @@ class Ruleset(MongoModel):
 
   def to_h(self):
     return {
-      "title": self.title,
-      "description": self.description
+      'title': self.title,
+      'description': self.description
     }
 
   class Meta:
