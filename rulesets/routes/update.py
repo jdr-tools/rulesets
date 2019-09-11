@@ -1,14 +1,14 @@
-from rulesets.models import Ruleset
-from flask import jsonify, request
 from bson.objectid import ObjectId
-from rulesets.routes.blueprints import rulesets_blueprint
-from flask import g
+from flask import jsonify, request, g
+from ..models import Ruleset, Session
+from .blueprints import rulesets_blueprint
 
 @rulesets_blueprint.route("/<ruleset_id>", methods=['PUT'])
 def update(ruleset_id):
 
   if 'title' in request.json:
     g.ruleset.title = request.json.get('title')
+
   if 'description' in request.json:
     g.ruleset.description = request.json.get('description')
 

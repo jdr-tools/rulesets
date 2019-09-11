@@ -1,8 +1,7 @@
-from flask import jsonify, request
 from bson.objectid import ObjectId
-from rulesets.models import Ruleset, Session
-from rulesets.routes.blueprints import rulesets_blueprint
-import pdb
+from flask import jsonify, request
+from ..models import Ruleset, Session
+from .blueprints import rulesets_blueprint
 
 @rulesets_blueprint.route("", methods=['GET'])
 def list():
