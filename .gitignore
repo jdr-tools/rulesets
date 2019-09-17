@@ -1,3 +1,5 @@
 .pytest_cache/
 dist/
 virtuatable_rulesets.egg-info/
+.env
+.coverage

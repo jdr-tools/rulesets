@@ -22,15 +22,15 @@ class TestDestroyNominalCase(DestroyRequestable):
     Ruleset.objects.delete()
 
   @pytest.mark.it('Returns a 200 (OK) Status code')
-  def test_delete_status_code_in_nominal_case(self, delete):
+  def test_status_code(self, delete):
     assert delete().status_code == 200
 
   @pytest.mark.it('Returns the correct body')
-  def test_delete_request_body_in_nominal_case(self, delete):
+  def test_message(self, delete):
     assert delete().get_json() == {'message': 'deleted'}
 
   @pytest.mark.it('Correctly deletes the ruleset from the database')
-  def test_ruleset_deletion_in_nominal_case(self, delete):
+  def test_deletion(self, delete):
     response = delete()
     assert Ruleset.objects.raw({'_id': self.ruleset._id}).count() == 0
 
@@ -71,12 +71,12 @@ class TestDestroyWithEmptySessionId():
 class TestDestroyWithUnknownSessionId():
 
   @pytest.mark.it('Returns a 404 (Not Found) status code')
-  def test_unknown_session_id_status_code(self, client):
+  def test_status_code(self, client):
     response = client.delete('/rulesets/test', query_string={'session_id': str(ObjectId())})
     assert response.status_code == 404
 
   @pytest.mark.it('Returns the correct error body')
-  def test_unknown_session_id_response_body(self, client):
+  def test_response_body(self, client):
     response = client.delete('/rulesets/test', query_string={'session_id': str(ObjectId())})
     assert response.get_json() == {
       'status': 404,
@@ -92,11 +92,11 @@ class TestDestroyWithUnknowId(DestroyRequestable):
     self.id = ObjectId()
 
   @pytest.mark.it('Returns a 404 (Not Found) status code')
-  def test_ruleset_deletion_status_code_when_id_not_found(self, delete):
+  def test_status_code(self, delete):
     assert delete().status_code == 404
 
   @pytest.mark.it('Returns the correct body')
-  def test_ruleset_deletion_body_when_id_not_found(self, delete):
+  def test_response_body(self, delete):
     assert delete().get_json() == {
       'status': 404,
       'field': 'ruleset_id',
