@@ -1,74 +1,104 @@
-import pytest
+import pytest, pdb
 from bson.objectid import ObjectId
 from rulesets.models import Account, Ruleset, Session
 from tests.fixtures import client
 
-def setup_function(function):
-  Ruleset.objects.delete()
-  pytest.ruleset = Ruleset(title='test title', description='test description').save()
+class DestroyRequestable():
+  """This class is just a superclass to easily make requests to delete rulesets."""
+  @pytest.fixture
+  def delete(self, client):
+    url = f"/rulesets/{str(self.id)}"
+    query_string = {'session_id': pytest.session.token}
+    return lambda: client.delete(url, query_string = query_string)
 
-def teardown_function(function):
-  Ruleset.objects.delete()
+@pytest.mark.describe('Destroy - nominal case')
+class TestDestroyNominalCase(DestroyRequestable):
 
-def test_missing_session_id_status_code(client):
-  assert client.delete('/rulesets/test').status_code == 400
+  def setup_method(self):
+    self.ruleset = Ruleset.objects.create(title = 'test title', description = 'test description')
+    self.id = self.ruleset._id
 
-def test_missing_session_id_response_body(client):
-  response_body = client.delete('/rulesets/test').get_json()
-  assert response_body == {
-    'status': 400,
-    'field': 'session_id',
-    'error': 'required'
-  }
+  def teardown_method(self):
+    Ruleset.objects.delete()
 
-def test_empty_session_id_status_code(client):
-  response = client.delete('/rulesets/test', query_string={'session_id': None})
-  assert response.status_code == 400
+  @pytest.mark.it('Returns a 200 (OK) Status code')
+  def test_delete_status_code_in_nominal_case(self, delete):
+    assert delete().status_code == 200
 
-def test_empty_session_id_response_body(client):
-  response = client.delete('/rulesets/test', query_string={'session_id': None})
-  assert response.get_json() == {
-    'status': 400,
-    'field': 'session_id',
-    'error': 'required'
-  }
+  @pytest.mark.it('Returns the correct body')
+  def test_delete_request_body_in_nominal_case(self, delete):
+    assert delete().get_json() == {'message': 'deleted'}
 
-def test_unknown_session_id_status_code(client):
-  response = client.delete('/rulesets/test', query_string={'session_id': str(ObjectId())})
-  assert response.status_code == 404
+  @pytest.mark.it('Correctly deletes the ruleset from the database')
+  def test_ruleset_deletion_in_nominal_case(self, delete):
+    response = delete()
+    assert Ruleset.objects.raw({'_id': self.ruleset._id}).count() == 0
 
-def test_unknown_session_id_response_body(client):
-  response = client.delete('/rulesets/test', query_string={'session_id': str(ObjectId())})
-  assert response.get_json() == {
-    'status': 404,
-    'field': 'session_id',
-    'error': 'unknown'
-  }
+@pytest.mark.describe('Destroy without giving session ID')
+class TestDestroyWithoutSessionId():
 
-def test_delete_status_code_in_nominal_case(client):
-  response = client.delete('/rulesets/' + str(pytest.ruleset._id), query_string={'session_id': pytest.session.token})
-  assert response.status_code == 200
+  @pytest.mark.it('Returns a 400 (Bad Request) status code')
+  def test_status_code(self, client):
+    assert client.delete('/rulesets/test').status_code == 400
 
-def test_delete_request_body_in_nominal_case(client):
-  response = client.delete('/rulesets/' + str(pytest.ruleset._id), query_string={'session_id': pytest.session.token})
-  assert response.get_json()['message'] == 'deleted'
+  @pytest.mark.it('Returns the correct error body')
+  def test_response_body(self, client):
+    response_body = client.delete('/rulesets/test').get_json()
+    assert response_body == {
+      'status': 400,
+      'field': 'session_id',
+      'error': 'required'
+    }
 
-def test_ruleset_deletion_in_nominal_case(client):
-  client.delete('/rulesets/' + str(pytest.ruleset._id), query_string={'session_id': pytest.session.token})
-  assert Ruleset.objects.raw({}).count() == 0
+@pytest.mark.describe('Destroy with empty session ID')
+class TestDestroyWithEmptySessionId():
 
-def test_ruleset_deletion_status_code_when_id_not_found(client):
-  response = client.delete('/rulesets/' + str(ObjectId()), query_string={'session_id': pytest.session.token})
-  assert response.status_code == 404
+  @pytest.mark.it('Returns a 400 (Bad Request) status code')
+  def test_status_code(self, client):
+    response = client.delete('/rulesets/test', query_string={'session_id': None})
+    assert response.status_code == 400
 
-def test_ruleset_deletion_body_when_id_not_found(client):
-  response = client.delete('/rulesets/' + str(ObjectId()), query_string={'session_id': pytest.session.token})
-  assert response.get_json() == {
-    'status': 404,
-    'field': 'ruleset_id',
-    'error': 'unknown'
-  }
+  @pytest.mark.it('Returns the correct error body')
+  def test_response_body(self, client):
+    response = client.delete('/rulesets/test', query_string={'session_id': None})
+    assert response.get_json() == {
+      'status': 400,
+      'field': 'session_id',
+      'error': 'required'
+    }
 
-def test_element_not_deleted_when_not_found(client):
-  client.delete('/rulesets/' + str(ObjectId()), query_string={'session_id': pytest.session.token})
-  assert Ruleset.objects.count() == 1
+@pytest.mark.describe('Destroy with unknown session ID')
+class TestDestroyWithUnknownSessionId():
+
+  @pytest.mark.it('Returns a 404 (Not Found) status code')
+  def test_unknown_session_id_status_code(self, client):
+    response = client.delete('/rulesets/test', query_string={'session_id': str(ObjectId())})
+    assert response.status_code == 404
+
+  @pytest.mark.it('Returns the correct error body')
+  def test_unknown_session_id_response_body(self, client):
+    response = client.delete('/rulesets/test', query_string={'session_id': str(ObjectId())})
+    assert response.get_json() == {
+      'status': 404,
+      'field': 'session_id',
+      'error': 'unknown'
+    }
+
+@pytest.mark.describe('Destroy with unknown ruleset ID')
+class TestDestroyWithUnknowId(DestroyRequestable):
+
+  @classmethod
+  def setup_class(self):
+    self.id = ObjectId()
+
+  @pytest.mark.it('Returns a 404 (Not Found) status code')
+  def test_ruleset_deletion_status_code_when_id_not_found(self, delete):
+    assert delete().status_code == 404
+
+  @pytest.mark.it('Returns the correct body')
+  def test_ruleset_deletion_body_when_id_not_found(self, delete):
+    assert delete().get_json() == {
+      'status': 404,
+      'field': 'ruleset_id',
+      'error': 'unknown'
+    }
