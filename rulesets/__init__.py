@@ -6,6 +6,7 @@ from bson.objectid import ObjectId
 from rulesets.routes.blueprints.rulesets import rulesets_blueprint
 import rulesets.routes
 from rulesets.helpers import api_error
+from bson.errors import InvalidId
 
 load_dotenv()
 app = Flask(__name__, instance_relative_config=True)
@@ -52,3 +53,7 @@ def check_attributes():
       return api_error(400, 'title.too_short')
 
 app.register_blueprint(rulesets_blueprint, url_prefix='/rulesets')
+
+@app.errorhandler(InvalidId)
+def handle_invalid_id(error):
+  return api_error(404, 'ruleset_id.unknown')

@@ -1,128 +1,199 @@
 import pytest
 from bson.objectid import ObjectId
 from rulesets.models import Account, Ruleset, Session
-from tests.fixtures import client, first_ruleset
+from tests.fixtures import client
 
-@pytest.fixture
-def empty_update(client):
-  return lambda json: client.put('/rulesets/test', json=json)
+class TestUpdate():
+  def setup_method(self, method):
+    Ruleset.objects.delete()
+    self.ruleset = Ruleset.objects.create(
+      title = 'test title',
+      description = 'test description'
+    )
+    self.id = str(self.ruleset._id)
+  def teardown_method(self, method):
+    Ruleset.objects.delete()
 
-@pytest.fixture
-def update_title(client):
-  return lambda t='other title': client.put('/rulesets/' + str(pytest.ruleset._id), json={
-    'title': t,
-    'session_id': pytest.session.token
-  })
+@pytest.mark.describe('Update without session ID')
+class TestWithoutSessionId(TestUpdate):
 
-@pytest.fixture
-def update_empty_title(client):
-  return lambda: client.put('/rulesets/' + str(pytest.ruleset._id), json={
-    'title': '',
-    'session_id': pytest.session.token
-  })
+  @pytest.fixture
+  def update(self, client):
+    return lambda: client.put(f'/rulesets/{self.id}', json = {})
 
-@pytest.fixture
-def update_unknown_id(client):
-  return lambda: client.put('/rulesets/' + str(ObjectId()), json={
-    'title': 'other title',
-    'session_id': pytest.session.token
-  })
+  @pytest.mark.it('Returns a 400 (Bad Request) Status code')
+  def test_status_code(self, update):
+    assert update().status_code == 400
 
-@pytest.fixture
-def update_description(client):
-  return lambda: client.put('/rulesets/' + str(pytest.ruleset._id), json={
-    'description': 'updated desc',
-    'session_id': pytest.session.token
-  })
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, update):
+    assert update().get_json() == {
+      'status': 400,
+      'field': 'session_id',
+      'error': 'required'
+    }
 
-def setup_function(function):
-  Ruleset.objects.delete()
-  pytest.ruleset = Ruleset(title='test title', description='test description').save()
+@pytest.mark.describe('Update with empty session ID')
+class TestWithEmptySessionId(TestUpdate):
 
-def test_missing_session_id_status_code(empty_update):
-  assert empty_update({}).status_code == 400
+  @pytest.fixture
+  def update(self, client):
+    return lambda: client.put(f'/rulesets/{self.id}', json = {'session_id': None})
 
-def test_missing_session_id_response_body(empty_update):
-  assert empty_update({}).get_json() == {
-    'status': 400,
-    'field': 'session_id',
-    'error': 'required'
-  }
+  @pytest.mark.it('Returns a 400 (Bad Request) Status code')
+  def test_status_code(self, update):
+    assert update().status_code == 400
 
-def test_empty_session_id_status_code(empty_update):
-  response = empty_update({'session_id': None})
-  assert response.status_code == 400
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, update):
+    assert update().get_json() == {
+      'status': 400,
+      'field': 'session_id',
+      'error': 'required'
+    }
 
-def test_empty_session_id_response_body(empty_update):
-  response = empty_update({'session_id': None})
-  assert response.get_json() == {
-    'status': 400,
-    'field': 'session_id',
-    'error': 'required'
-  }
+@pytest.mark.describe('Update with unknown session ID')
+class TestWithUnknownSessionId(TestUpdate):
 
-def test_unknown_session_id_status_code(empty_update):
-  response = empty_update({'session_id': str(ObjectId())})
-  assert response.status_code == 404
+  @pytest.fixture
+  def update(self, client):
+    return lambda: client.put(f'/rulesets/{self.id}', json = {'session_id': 'test_unknwon'})
 
-def test_unknown_session_id_response_body(empty_update):
-  response = empty_update({'session_id': str(ObjectId())})
-  assert response.get_json() == {
-    'status': 404,
-    'field': 'session_id',
-    'error': 'unknown'
-  }
+  @pytest.mark.it('Returns a 404 (Not Found) Status code')
+  def test_status_code(self, update):
+    assert update().status_code == 404
 
-def test_title_update_status_code_in_nominal_case(update_title):
-  assert update_title().status_code == 200
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, update):
+    assert update().get_json() == {
+      'status': 404,
+      'field': 'session_id',
+      'error': 'unknown'
+    }
 
-def test_title_update_response_body_in_nominal_case(update_title):
-  assert update_title().get_json()['message'] == 'updated'
+@pytest.mark.describe('')
+class TestWithUnknownId(TestUpdate):
 
-def test_title_update_in_database(first_ruleset, update_title):
-  update_title()
-  assert first_ruleset().title == 'other title'
+  @pytest.fixture
+  def update(self, client):
+    return lambda: client.put('/rulesets/unknown', json = {
+      'title': 'other title',
+      'session_id': pytest.session.token
+    })
 
-def test_update_empty_title_status_code(update_empty_title):
-  assert update_empty_title().status_code == 400
+  @pytest.mark.it('Returns a 404 (Not Found) Status code')
+  def test_status_code(self, update):
+    assert update().status_code == 404
 
-def test_update_empty_title_response_body(update_empty_title):
-  assert update_empty_title().get_json() == {
-    'status': 400,
-    'field': 'title',
-    'error': 'too_short'
-  }
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, update):
+    assert update().get_json() == {
+      'status': 404,
+      'field': 'ruleset_id',
+      'error': 'unknown'
+    }
 
-def test_too_short_title_update_status_code(update_title):
-  assert update_title('test').status_code == 400
+@pytest.mark.describe('Nominal case, update of the title')
+class TestUpdateTitle(TestUpdate):
 
-def test_too_short_title_update_response_body(update_title):
-  assert update_title('test').get_json() == {
-    'status': 400,
-    'field': 'title',
-    'error': 'too_short'
-  }
+  @pytest.fixture
+  def update(self, client):
+    return lambda: client.put(f'/rulesets/{self.id}', json = {
+      'title': 'other title',
+      'session_id': pytest.session.token
+    })
 
-def test_update_empty_title_in_database(first_ruleset, update_empty_title):
-  update_empty_title()
-  assert first_ruleset().title == 'test title'
+  @pytest.mark.it('Returns a 200 (OK) Status code')
+  def test_status_code(self, update):
+    assert update().status_code == 200
 
-def test_description_update_status_code(update_description):
-  assert update_description().status_code == 200
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, update):
+    assert update().get_json()['message'] == 'updated'
 
-def test_description_update_responde_body(update_description):
-  assert update_description().get_json()['message'] == 'updated'
+  @pytest.mark.it('Updates the ruleset in the database')
+  def test_database_update(self, update):
+    update()
+    ruleset = Ruleset.objects.raw({'_id': self.ruleset._id})[0]
+    assert ruleset.title == 'other title'
 
-def test_description_update_in_database(first_ruleset, update_description):
-  update_description()
-  assert first_ruleset().description == 'updated desc'
 
-def test_update_with_unknown_id_status_code(update_unknown_id):
-  assert update_unknown_id().status_code == 404
+@pytest.mark.describe('Update with an empty title')
+class TestUpdateEmptyTitle(TestUpdate):
 
-def test_update_with_unknown_id_response_body(update_unknown_id):
-  assert update_unknown_id().get_json() == {
-    'status': 404,
-    'field': 'ruleset_id',
-    'error': 'unknown'
-  }
+  @pytest.fixture
+  def update(self, client):
+    return lambda: client.put(f'/rulesets/{self.id}', json = {
+      'title': '',
+      'session_id': pytest.session.token
+    })
+
+  @pytest.mark.it('Returns a 400 (Bad Request) Status code')
+  def test_status_code(self, update):
+    assert update().status_code == 400
+
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, update):
+    assert update().get_json() == {
+      'status': 400,
+      'field': 'title',
+      'error': 'too_short'
+    }
+
+  @pytest.mark.it('Has not updated the title in the database')
+  def test_database_update(self, update):
+    update()
+    ruleset = Ruleset.objects.raw({'_id': self.ruleset._id})[0]
+    assert ruleset.title == 'test title'
+
+@pytest.mark.describe('Update with a too short title')
+class TestUpdateShortTitle(TestUpdate):
+
+  @pytest.fixture
+  def update(self, client):
+    return lambda: client.put(f'/rulesets/{self.id}', json = {
+      'title': 'test',
+      'session_id': pytest.session.token
+    })
+
+  @pytest.mark.it('Returns a 400 (Bad Request) Status code')
+  def test_status_code(self, update):
+    assert update().status_code == 400
+
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, update):
+    assert update().get_json() == {
+      'status': 400,
+      'field': 'title',
+      'error': 'too_short'
+    }
+
+  @pytest.mark.it('Has not updated the title in the database')
+  def test_database_update(self, update):
+    update()
+    ruleset = Ruleset.objects.raw({'_id': self.ruleset._id})[0]
+    assert ruleset.title == 'test title'
+
+@pytest.mark.describe('Update of the description')
+class TestUpdateDescription(TestUpdate):
+
+  @pytest.fixture
+  def update(self, client):
+    return lambda: client.put(f'/rulesets/{self.id}', json = {
+      'description': 'updated desc',
+      'session_id': pytest.session.token
+    })
+
+  @pytest.mark.it('Returns a 200 (OK) Status code')
+  def test_status_code(self, update):
+    assert update().status_code == 200
+
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, update):
+    assert update().get_json()['message'] == 'updated'
+
+  @pytest.mark.it('Updates the ruleset in the database')
+  def test_database_update(self, update):
+    update()
+    ruleset = Ruleset.objects.raw({'_id': self.ruleset._id})[0]
+    assert ruleset.description == 'updated desc'
