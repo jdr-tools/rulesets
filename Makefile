@@ -2,4 +2,4 @@ init:
 	pipenv install
 
 test:
-	pipenv run pytest -v
+	pipenv run pytest --cov=rulesets --testdox tests/

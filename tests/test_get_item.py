@@ -3,72 +3,102 @@ from bson.objectid import ObjectId
 from rulesets.models import Account, Ruleset, Session
 from tests.fixtures import client
 
-def setup_module():
-  pytest.ruleset = Ruleset.objects.create(
-    title='test title',
-    description='test description'
-  )
+class GetRequestable():
 
-@pytest.fixture
-def get_item(client):
-  return lambda p={}: client.get('/rulesets/' + str(pytest.ruleset._id), query_string=p)
+  @pytest.fixture
+  def get(self, raw_get):
+    return lambda: raw_get(self.url, {'session_id': pytest.session.token})
 
-@pytest.fixture
-def get_unknown_item(client):
-  return lambda: client.get('/rulesets/' + str(ObjectId()), query_string={'session_id': pytest.session.token})
+  @pytest.fixture
+  def raw_get(self, client):
+    return lambda url, parameters: client.get(url, query_string = parameters)
 
-def setup_function():
-  pytest.ruleset = Ruleset(title='test title', description='test description').save()
+@pytest.mark.describe('Get - Nominal case')
+class TestGetNominalCase(GetRequestable):
 
-def test_missing_session_id_status_code(client):
-  assert client.get('/rulesets').status_code == 400
+  @classmethod
+  def setup_class(self):
+    self.ruleset = Ruleset.objects.create(title = 'test title', description = 'test description')
+    self.url = f"/rulesets/{str(self.ruleset._id)}"
 
-def test_missing_session_id_response_body(client):
-  response_body = client.get('/rulesets').get_json()
-  assert response_body == {
-    'status': 400,
-    'field': 'session_id',
-    'error': 'required'
-  }
+  @classmethod
+  def teardown_class(self):
+    Ruleset.objects.raw({'_id': self.ruleset._id}).delete()
 
-def test_empty_session_id_status_code(get_item):
-  assert get_item({'session_id': None}).status_code == 400
+  @pytest.mark.it('Returns a 200 (OK) status code')
+  def test_status_code(self, get):
+    assert get().status_code == 200
 
-def test_empty_session_id_response_body(get_item):
-  response_body = get_item({'session_id': None}).get_json()
-  assert response_body == {
-    'status': 400,
-    'field': 'session_id',
-    'error': 'required'
-  }
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, get):
+    assert get().get_json() == {
+      'title': 'test title',
+      'description': 'test description'
+    }
 
-def test_unknown_session_id_status_code(get_item):
-  response = get_item({'session_id': str(ObjectId())})
-  assert response.status_code == 404
+@pytest.mark.describe('Get item with unknown ID')
+class TestWithUnknownId(GetRequestable):
 
-def test_unknown_session_id_response_body(get_item):
-  response = get_item({'session_id': str(ObjectId())})
-  assert response.get_json() == {
-    'status': 404,
-    'field': 'session_id',
-    'error': 'unknown'
-  }
+  def setup_class(self):
+    self.url = f"/rulesets/{str(ObjectId())}"
 
-def test_get_existing_item_status_code(get_item):
-  assert get_item({'session_id': pytest.session.token}).status_code == 200
+  @pytest.mark.it('Returns a 404 (Not Found) Status code')
+  def test_status_code(self, raw_get):
+    assert raw_get(self.url, {'session_id': pytest.session.token}).status_code == 404
 
-def test_get_existing_item_response_body(get_item):
-  assert get_item({'session_id': pytest.session.token}).get_json() == {
-    'title': 'test title',
-    'description': 'test description'
-  }
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, raw_get):
+    assert raw_get(self.url, {'session_id': pytest.session.token}).get_json() == {
+      'status': 404,
+      'field': 'ruleset_id',
+      'error': 'unknown'
+    }
 
-def test_get_unknown_item_status_code(get_unknown_item):
-  assert get_unknown_item().status_code == 404
+@pytest.mark.describe('Get item without session ID')
+class TestGetItemWithoutSessionId():
 
-def test_get_unknown_item_response_body(get_unknown_item):
-  assert get_unknown_item().get_json() == {
-    'status': 404,
-    'field': 'ruleset_id',
-    'error': 'unknown'
-  }
+  @pytest.mark.it('Returns a 400 (Bad Request) Status code')
+  def test_status_code(self, client):
+    assert client.get('/rulesets').status_code == 400
+
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, client):
+    response_body = client.get('/rulesets').get_json()
+    assert response_body == {
+      'status': 400,
+      'field': 'session_id',
+      'error': 'required'
+    }
+
+@pytest.mark.describe('Get item with empty session ID')
+class TestGetItemWithEmptySessionId(GetRequestable):
+
+  @pytest.mark.it('Returns a 400 (Bad Request) Status code')
+  def test_status_code(self, raw_get):
+    assert raw_get('/rulesets/any_id', {'session_id': None}).status_code == 400
+
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, raw_get):
+    response_body = raw_get('/rulesets/any_id', {'session_id': None}).get_json()
+    assert response_body == {
+      'status': 400,
+      'field': 'session_id',
+      'error': 'required'
+    }
+
+@pytest.mark.describe('Get item with unknwon session ID')
+class TestGetItemWithUnknownSessionId(GetRequestable):
+
+  @pytest.mark.it('Returns a 404 (Not Found) Status code')
+  def test_status_code(self, raw_get):
+    response = raw_get('/rulesets/any_id', {'session_id': str(ObjectId())})
+    assert response.status_code == 404
+
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, raw_get):
+    response = raw_get('/rulesets/any_id', {'session_id': str(ObjectId())})
+    assert response.get_json() == {
+      'status': 404,
+      'field': 'session_id',
+      'error': 'unknown'
+    }

@@ -12,6 +12,8 @@ dnspython = "*"
 pymodm = "*"
 pytest = "*"
 setuptools = "*"
+pytest-cov = "*"
+pytest-testdox = "*"
 
 [requires]
 python_version = "3.7"

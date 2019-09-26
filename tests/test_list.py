@@ -1,70 +1,95 @@
 import pytest
-import pdb
 from bson.objectid import ObjectId
-from rulesets.models import Account, Ruleset, Session
+from rulesets.models import Ruleset
 from tests.fixtures import client
 
-def teardown_function():
-  Ruleset.objects.delete()
+class ListRequestable():
 
-@pytest.fixture
-def list_request(client):
-  return lambda p: client.get('/rulesets', query_string = p)
+  @pytest.fixture
+  def list(self, raw_list):
+    return lambda: raw_list({'session_id': pytest.session.token})
 
-@pytest.fixture
-def list(list_request):
-  return lambda: list_request({'session_id': pytest.session.token})
+  @pytest.fixture
+  def raw_list(self, client):
+    return lambda p: client.get('/rulesets', query_string = p)
 
-def test_missing_session_id_status_code(client):
-  assert client.get('/rulesets').status_code == 400
+@pytest.mark.describe('List - Nominal case without rulesets stored')
+class TestEmptyListNominalCase(ListRequestable):
 
-def test_missing_session_id_response_body(client):
-  response_body = client.get('/rulesets').get_json()
-  assert response_body == {
-    'status': 400,
-    'field': 'session_id',
-    'error': 'required'
-  }
+  @pytest.mark.it('Returns a 200 (OK) Status code')
+  def test_status_code(self, list):
+    assert list().status_code == 200
 
-def test_empty_session_id_status_code(list_request):
-  assert list_request({'session_id': None}).status_code == 400
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, list):
+    assert list().get_json() == []
 
-def test_empty_session_id_response_body(list_request):
-  response_body = list_request({'session_id': None}).get_json()
-  assert response_body == {
-    'status': 400,
-    'field': 'session_id',
-    'error': 'required'
-  }
+@pytest.mark.describe('List - Nominal case with populated rulesets')
+class TestEmptyListNominalCase(ListRequestable):
 
-def test_unknown_session_id_status_code(list_request):
-  response = list_request({'session_id': str(ObjectId())})
-  assert response.status_code == 404
+  def setup_method(self):
+    Ruleset.objects.delete()
+    self.ruleset = Ruleset.objects.create(title='test title', description='test description')
 
-def test_unknown_session_id_response_body(list_request):
-  response = list_request({'session_id': str(ObjectId())})
-  assert response.get_json() == {
-    'status': 404,
-    'field': 'session_id',
-    'error': 'unknown'
-  }
+  def teardown_method(self):
+    Ruleset.objects.delete()
 
-def test_empty_list_status_code(list):
-  assert list().status_code == 200
+  @pytest.mark.it('Returns a 200 (OK) Status code')
+  def test_status_code(self, list):
+    assert list().status_code == 200
 
-def test_empty_list_response_body(list):
-  assert list().get_json() == []
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, list):
+    assert list().get_json() == [
+      {
+        '_id': str(self.ruleset._id),
+        'title': 'test title',
+        'description': 'test description'
+      }
+    ]
 
-def test_populated_list_status_code(list):
-  Ruleset(title='test title', description='test description').save()
-  assert list().status_code == 200
+@pytest.mark.describe('List without session ID')
+class TestListWithoutSessionId(ListRequestable):
 
-def test_populated_list_response_body(list):
-  ruleset = Ruleset(title='test title', description='test description').save()
-  assert list().get_json() == [
-    {
-      '_id': str(ruleset._id),
-      'title': 'test title',
-      'description': 'test description'
+  @pytest.mark.it('Returns a 400 (Bad Request) Status code')
+  def test_status_code(self, raw_list):
+    assert raw_list({}).status_code == 400
+
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, raw_list):
+    assert raw_list({}).get_json() == {
+      'status': 400,
+      'field': 'session_id',
+      'error': 'required'
     }
-  ]
+
+@pytest.mark.describe('List with empty session ID')
+class TestListWithEmptySessionId(ListRequestable):
+
+  @pytest.mark.it('Returns a 400 (Bad Request) Status code')
+  def test_status_code(self, raw_list):
+    assert raw_list({'session_id': None}).status_code == 400
+
+  @pytest.mark.it('Returns the correct body')
+  def test_response_body(self, raw_list):
+    assert raw_list({'session_id': None}).get_json() == {
+      'status': 400,
+      'field': 'session_id',
+      'error': 'required'
+    }
+
+@pytest.mark.describe('List with unknown session ID')
+class TestListWithUnknownSessionId(ListRequestable):
+
+  @pytest.mark.it('Returns a 404 (Not Found) Status code')
+  def test_status_code(self, raw_list):
+    response = raw_list({'session_id': str(ObjectId())})
+    assert response.status_code == 404
+
+  @pytest.mark.describe('Returns the correct body')
+  def test_response_body(self, raw_list):
+    assert raw_list({'session_id': str(ObjectId())}).get_json() == {
+      'status': 404,
+      'field': 'session_id',
+      'error': 'unknown'
+    }
